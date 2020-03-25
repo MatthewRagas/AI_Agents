@@ -14,6 +14,8 @@
 #include "Behavior.h"
 #include "KeyboardBehavior.h"
 #include "SeekBehavior.h"
+#include "FleeBehavior.h"
+#include "WanderBehavior.h"
 
 int main()
 {
@@ -35,7 +37,16 @@ int main()
 	enemy->setPosition({ 500.0f, 500.0f });
 	SeekBehavior* seekBehavior = new  SeekBehavior();
 	seekBehavior->setTarget(player);
-	enemy->addedBehavior(seekBehavior);
+	enemy->addedBehavior(seekBehavior);	
+	Agent* enemy1 = new Agent();
+	FleeBehavior* fleeBehavior = new FleeBehavior();
+	fleeBehavior->setTarget(player);
+	enemy1->setPosition({ 250.0f, 250.0f });
+	enemy1->addedBehavior(fleeBehavior);
+	WanderBehavior* wanderBehavior = new WanderBehavior();
+	Agent* wanderer = new Agent();
+	wanderer->setPosition({ 400.0f, 400.0f });
+	wanderer->addedBehavior(wanderBehavior);
 
 	//--------------------------------------------------------------------------------------
 
@@ -46,6 +57,8 @@ int main()
 		//----------------------------------------------------------------------------------
 		player->update(GetFrameTime());
 		enemy->update(GetFrameTime());
+		enemy1->update(GetFrameTime());
+		wanderer->update(GetFrameTime());
 		//----------------------------------------------------------------------------------
 
 		// Draw
@@ -56,6 +69,8 @@ int main()
 
 		player->draw();
 		enemy->draw();
+		enemy1->draw();
+		wanderer->draw();
 
 		DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
 

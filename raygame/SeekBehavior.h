@@ -13,4 +13,3 @@ public:
 private:
 	Agent* m_target;
 };
-

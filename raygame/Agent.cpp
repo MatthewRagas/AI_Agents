@@ -2,46 +2,30 @@
 #include "Behavior.h"
 
 
-Agent::Agent()
-{
-}
-
-
-Agent::~Agent()
-{
-}
-
 void Agent::update(float deltaTime)
 {
 	//Set total force to zero
-	Vector2 totalForce = { 0,0 };
-
-	//for each Behavior in the Behavior list
-	for (auto i = m_BehaviorList.begin(); i != m_BehaviorList.end(); i++)
-	{
+	//For each Behavior in the Behavior list
+	for (auto i = m_behaviorList.begin(); i != m_behaviorList.end(); i++) {
 		//Call the Behavior's update function
-		Vector2 force = (*i)->update(this, deltaTime);
-		//Add the return value to total force
-		totalForce += force;
-	}		
-	//Add total force times delta time to velocity
-	addForce(totalForce * deltaTime);
+		(*i)->update(this, deltaTime);
+	}
 	//Add velocity times delta time to position
-	m_Position += m_Velocity * deltaTime;
+	m_position += m_velocity * deltaTime;
 }
 
 void Agent::draw()
 {
-	DrawRectangle(m_Position.x, m_Position.y, 20, 20, RED);
+	DrawRectangle((int)m_position.x, (int)m_position.y, 100, 100, m_color);
 }
 
-void Agent::addedBehavior(Behavior * behavior)
+void Agent::addBehavior(Behavior* behavior)
 {
 	//Add the Behavior to the Behavior list
-	m_BehaviorList.insert(m_BehaviorList.end(), behavior);
+	m_behaviorList.insert(m_behaviorList.end(), behavior);
 }
 
 void Agent::addForce(Vector2 force)
 {
-	m_Velocity += force;
+	m_velocity += force;
 }

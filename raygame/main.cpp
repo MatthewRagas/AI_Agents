@@ -11,43 +11,90 @@
 
 #include "raylib.h"
 #include "Agent.h"
-#include "Behavior.h"
 #include "KeyboardBehavior.h"
-#include "SeekBehavior.h"
-#include "FleeBehavior.h"
+#include "ScreenEdgeBehavior.h"
 #include "WanderBehavior.h"
+#include "SeekBehavior.h"
+#include "PursuitBehavior.h"
+#include "FSM.h" 
+#include "IdleState.h"
+#include "EnemyAttackState.h"
+#include "WithinRangeCondition.h"
+#include "DecisionTreeBehavior.h"
+#include "BooleanDecision.h"
+#include "BehaviorDecision.h"
 
 int main()
 {
 	// Initialization
 	//--------------------------------------------------------------------------------------
-	int screenWidth = 1600;
-	int screenHeight = 900;
+	int screenWidth = 3200;
+	int screenHeight = 1800;
 
 	InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
 
 	SetTargetFPS(60);
 
+	//Create the player
 	Agent* player = new Agent();
-	player->setPosition({ 100.0f, 100.0f });
+	player->setPosition(Vector2{ 1600.0f, 900.0f });
+	player->setSpeed(500.0f);
+	player->setColor(SKYBLUE);
+	//Create and add keyboard behavior
 	KeyboardBehavior* keyboardBehavior = new KeyboardBehavior();
-	player->addedBehavior(keyboardBehavior);
+	player->addBehavior(keyboardBehavior);
+	//Create and add screen edge behavior
+	ScreenEdgeBehavior* screenEdgeBehavior = new ScreenEdgeBehavior();
+	player->addBehavior(screenEdgeBehavior);
 
+	//Create the enemy
 	Agent* enemy = new Agent();
-	enemy->setPosition({ 500.0f, 500.0f });
-	SeekBehavior* seekBehavior = new  SeekBehavior();
-	seekBehavior->setTarget(player);
-	enemy->addedBehavior(seekBehavior);	
-	Agent* enemy1 = new Agent();
-	FleeBehavior* fleeBehavior = new FleeBehavior();
-	fleeBehavior->setTarget(player);
-	enemy1->setPosition({ 250.0f, 250.0f });
-	enemy1->addedBehavior(fleeBehavior);
-	WanderBehavior* wanderBehavior = new WanderBehavior();
-	Agent* wanderer = new Agent();
-	wanderer->setPosition({ 400.0f, 400.0f });
-	wanderer->addedBehavior(wanderBehavior);
+	enemy->setPosition(Vector2{ 800.0f, 450.0f });
+	enemy->setSpeed(250.0f);
+	enemy->setColor(DARKBLUE);
 
+	//Create and add the enemy's FSM
+	FSM* enemyFSM = new FSM();
+	//enemy->addBehavior(enemyFSM);
+	//Create and add the idle state
+	IdleState* idleState = new IdleState();
+	enemyFSM->addState(idleState);
+	//Create and add the attack state
+	EnemyAttackState* attackState = new EnemyAttackState(player, 250.0f);
+	enemyFSM->addState(attackState);
+	//Create and add the condition
+	Condition* withinRangeCondition = new WithinRangeCondition(player, 200.0f);
+	enemyFSM->addCondition(withinRangeCondition);
+	//Create and add the transition
+	Transition* toAttackTransition = new Transition(attackState, withinRangeCondition);
+	enemyFSM->addTransition(toAttackTransition);
+	idleState->addTransitions(toAttackTransition);
+	//Set current state to idle
+	enemyFSM->setCurrentState(idleState);
+
+	//Leaves
+	WanderBehavior* wanderBehavior = new WanderBehavior();
+	BehaviorDecision* wanderDecision = new BehaviorDecision(wanderBehavior);
+	SeekBehavior* seekBehavior = new SeekBehavior();
+	seekBehavior->setTarget(player);
+	BehaviorDecision* seekDecision = new BehaviorDecision(seekBehavior);
+	PursuitBehavior* pursuitBehavior = new PursuitBehavior();
+	pursuitBehavior->setTarget(player);
+	BehaviorDecision* pursuitDecision = new BehaviorDecision(pursuitBehavior);
+	//Branches
+	WithinRangeCondition* canSeeCondition = new WithinRangeCondition(player, 500);
+	BooleanDecision* canSeeDecision = new BooleanDecision(pursuitDecision, seekDecision, canSeeCondition);
+	WithinRangeCondition* canHearCondition = new WithinRangeCondition(player, 1000);
+	BooleanDecision* canHearDecision = new BooleanDecision(canSeeDecision, wanderDecision, canHearCondition);
+	//Enemy decision tree
+	DecisionTreeBehavior* enemyDecisionTree = new DecisionTreeBehavior(canHearDecision);
+	enemy->addBehavior(enemyDecisionTree);
+	enemy->addBehavior(screenEdgeBehavior);
+
+	//MoveToTargetDecision* chaseDecision = new MoveToTargetDecision(player, 500.0f);
+	//Condition* inSightCondition = new WithinRangeCondition(player, 1000.0f);
+	//BooleanDecision* inSightDecision = new BooleanDecision()
+	//DecisionBehavior* enemyDecisionTree = new DecisionBehavior()
 	//--------------------------------------------------------------------------------------
 
 	// Main game loop
@@ -55,10 +102,10 @@ int main()
 	{
 		// Update
 		//----------------------------------------------------------------------------------
-		player->update(GetFrameTime());
-		enemy->update(GetFrameTime());
-		enemy1->update(GetFrameTime());
-		wanderer->update(GetFrameTime());
+		float deltaTime = GetFrameTime();
+
+		player->update(deltaTime);
+		enemy->update(deltaTime);
 		//----------------------------------------------------------------------------------
 
 		// Draw
@@ -69,10 +116,6 @@ int main()
 
 		player->draw();
 		enemy->draw();
-		enemy1->draw();
-		wanderer->draw();
-
-		DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
 
 		EndDrawing();
 		//----------------------------------------------------------------------------------
